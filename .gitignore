@@ -8,3 +8,4 @@ pom.xml.asc
 .lsp/
 .clj-kondo/
 target/
+docker-media/

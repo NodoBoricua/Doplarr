@@ -97,9 +97,11 @@
 (defn media-fn
   "Resolves a function `f` in the backend namespace matching the available backend for a given `media`"
   [media f]
-  (requiring-resolve
-   (symbol (str "doplarr.backends." (name (config/available-backend-for-media media @state/config)))
-           f)))
+  (let [backend (name (config/available-backend-for-media media @state/config))
+        ns-fn   (symbol (str "doplarr.backends." backend ".impl") f)]
+    (trace "📦 Resolving function for backend:" ns-fn)
+    (requiring-resolve ns-fn)))
+
 
 (defn process-rootfolders [resp]
   (->> (from-camel resp)

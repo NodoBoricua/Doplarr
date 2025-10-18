@@ -2,6 +2,10 @@
  :sonarr/api ""
  :radarr/url ""
  :radarr/api ""
+ :lidarr/url ""
+ :lidarr/api ""
+ :readarr/url ""
+ :readarr/api ""
  ; :overseerr/url ""
  ; :overseerr/api ""
  :discord/token ""
@@ -9,10 +13,17 @@
  ; :partial-seasons false
  ; :sonarr/quality-profile ""
  ; :radarr/quality-profile ""
+ ; :lidarr/quality-profile ""
+ ; :lidarr/metadata-profile ""
+ ; :readarr/quality-profile ""
+ ; :readarr/metadata-profile ""
  ; :radarr/rootfolder ""
  ; :sonarrr/language-profile ""
  ; :sonarr/rootfolder ""
+ ; :lidarr/rootfolder ""
+ ; :readarr/rootfolder ""
  ; :sonarr/season-folders true
+ ; :lidarr/album-folders true
  ; :discord/max-results 10
  ; :overseerr/default-id 1
  ; :log-level :trace

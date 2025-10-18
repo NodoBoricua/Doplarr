@@ -40,7 +40,9 @@
 
 (def request-thumbnail
   {:series "https://thetvdb.com/images/logo.png"
-   :movie "https://i.imgur.com/44ueTES.png"})
+   :movie "https://i.imgur.com/44ueTES.png"
+   :music "https://i.imgur.com/8lZ3Z3A.png"
+   :book "https://i.imgur.com/2X32aD2.png"})
 
 (defn application-command-interaction-option-data [app-com-int-opt]
   [(keyword (:name app-com-int-opt))
@@ -74,9 +76,13 @@
    :label (apply str (take MAX-CHARACTERS label))})
 
 (defn select-menu-option [index result]
-  {:label (apply str (take MAX-CHARACTERS (or (:title result) (:name result))))
-   :description (:year result)
-   :value index})
+  (let [label-text (let [title (or (:title result) (:name result))]
+                     (if (str/blank? title)
+                       "(No Title)"
+                       title))]
+    {:label (apply str (take MAX-CHARACTERS label-text))
+     :description (:year result)
+     :value index}))
 
 (defn dropdown [content id options]
   {:content content
@@ -97,7 +103,10 @@
 (defn option-dropdown [option options uuid page]
   (let [all-options (map #(set/rename-keys % {:name :label :id :value}) options)
         chunked (partition-all MAX-OPTIONS all-options)
-        ddown (dropdown (str "Which " (utils/canonical-option-name option) "?")
+        prompt (if (= :album option)
+                 "Which album(s)?"
+                 (str "Which " (utils/canonical-option-name option) "?"))
+        ddown (dropdown prompt
                         (str "option-select:" uuid ":" (name option))
                         (nth chunked page))]
     (cond-> ddown
@@ -111,7 +120,7 @@
 (defn dropdown-result [interaction]
   (Integer/parseInt (s/select-one [:payload :values 0] interaction)))
 
-(defn request-embed [{:keys [media-type title overview poster season quality-profile language-profile rootfolder]}]
+(defn request-embed [{:keys [media-type title overview poster season album quality-profile metadata-profile language-profile rootfolder]}]
   {:title title
    :description overview
    :image {:url poster}
@@ -122,18 +131,24 @@
             [(when quality-profile
                {:name "Profile"
                 :value quality-profile})
+             (when metadata-profile
+               {:name "Metadata Profile"
+                :value metadata-profile})
              (when language-profile
                {:name "Language Profile"
                 :value language-profile})
              (when season
                {:name "Season"
                 :value (if (= season -1) "All" season)})
+             (when album
+               {:name "Album"
+                :value album})
              (when rootfolder
                {:name "Root Folder"
                 :value rootfolder})])})
 
 (defn request [embed-data uuid]
-  {:content (str "Request this " (name (:media-type embed-data)) " ?")
+  {:content (str "Request this " (or (some-> embed-data :media-type name) "media") " ?")
    :embeds [(request-embed embed-data)]
    :flags 64
    :components [{:type 1 :components (for [format (:request-formats embed-data)]

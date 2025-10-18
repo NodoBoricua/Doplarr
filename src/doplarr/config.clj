@@ -20,6 +20,19 @@
     :radarr/api
     :radarr/quality-profile
     :radarr/rootfolder
+    ; Lidarr
+    :lidarr/url
+    :lidarr/api
+    :lidarr/quality-profile
+    :lidarr/metadata-profile
+    :lidarr/rootfolder
+    :lidarr/album-folders
+    ; Readarr
+    :readarr/url
+    :readarr/api
+    :readarr/quality-profile
+    :readarr/metadata-profile
+    :readarr/rootfolder
     ; Overseerr
     :overseerr/url
     :overseerr/api

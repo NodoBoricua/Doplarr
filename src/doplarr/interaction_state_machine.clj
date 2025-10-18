@@ -110,7 +110,6 @@
                       :available (msg-resp "This selection is already available!")
                       (do
                         (info "Performing request for " payload)
-                        (msg-resp "Request performed!")
                         (case (:discord/requested-msg-style @state/config)
                           :none nil
                           :embed (m/create-message! messaging channel-id (discord/request-performed-embed embed user-id))
