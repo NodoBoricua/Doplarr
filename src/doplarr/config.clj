@@ -66,6 +66,8 @@
         (redact :sonarr/api)
         (redact :radarr/api)
         (redact :overseerr/api)
+        (redact :lidarr/api)
+        (redact :readarr/api)
         (redact :discord/token))))
 
 (defn valid-config [env]
