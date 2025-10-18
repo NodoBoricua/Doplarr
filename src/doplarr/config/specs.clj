@@ -7,11 +7,15 @@
 (spec/def :sonarr/url string?)
 (spec/def :radarr/url string?)
 (spec/def :overseerr/url string?)
+(spec/def :lidarr/url string?)
+(spec/def :readarr/url string?)
 
 ; Backend API keys
 (spec/def :sonarr/api string?)
 (spec/def :radarr/api string?)
 (spec/def :overseerr/api string?)
+(spec/def :lidarr/api string?)
+(spec/def :readarr/api string?)
 
 ; Discord bot token - the only really "required" item
 (spec/def :discord/token string?)
@@ -33,6 +37,14 @@
 ; Overseerr optionals
 (spec/def :overseerr/default-id pos-int?)
 
+; Lidarr optionals
+(spec/def :lidarr/quality-profile string?)
+(spec/def :lidarr/rootfolder string?)
+
+; Readarr optionals
+(spec/def :readarr/quality-profile string?)
+(spec/def :readarr/rootfolder string?)
+
 ; Doplarr optionals
 (spec/def ::partial-seasons boolean?)
 (spec/def ::log-level #{:trace :debug :info :warn :error :fatal :report})
@@ -45,8 +57,8 @@
 (defmacro matched-keys [& ks]
   `(when-req #(some (partial contains? %) ~(vec ks)) (spec/keys :req ~(vec ks))))
 
-(spec/def ::has-backend #(some (partial contains? %) [:sonarr/url :radarr/url :overseerr/url]))
-(expound/defmsg ::has-backend "config must contain at least one of the following backends: sonarr, radarr, overseerr
+(spec/def ::has-backend #(some (partial contains? %) [:sonarr/url :radarr/url :overseerr/url :readarr/url :lidarr/url]))
+(expound/defmsg ::has-backend "config must contain at least one of the following backends: sonarr, radarr, overseerr, lidarr, readarr
 If you have configured one, make sure to check spelling. A valid configuration contains both the api key and url")
 
 ; Complete configuration
@@ -56,9 +68,14 @@ If you have configured one, make sure to check spelling. A valid configuration c
                                      :discord/requested-msg-style
                                      :radarr/quality-profile
                                      :sonarr/quality-profile
+                                     :lidarr/quality-profile
+                                     :readarr/quality-profile
                                      :sonarr/language-profile
                                      :sonarr/season-folders
                                      :overseerr/default-id
+                                     :lidarr/metadata-profile
+                                     :lidarr/rootfolder
+                                     :readarr/rootfolder
                                      :sonarr/rootfolder
                                      :radarr/rootfolder]
                                :opt-un [::partial-seasons
@@ -66,4 +83,6 @@ If you have configured one, make sure to check spelling. A valid configuration c
                     ::has-backend
                     (matched-keys :sonarr/url :sonarr/api)
                     (matched-keys :radarr/url :radarr/api)
+                    (matched-keys :lidarr/url :lidarr/api)
+                    (matched-keys :readarr/url :readarr/api)
                     (matched-keys :overseerr/url :overseerr/api)))

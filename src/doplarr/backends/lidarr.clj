@@ -2,6 +2,7 @@
   (:require
    [clojure.core.async :as a]
    [clojure.set :as set]
+   [clojure.string :as string]
    [doplarr.backends.lidarr.impl :as impl]
    [doplarr.state :as state]
    [doplarr.utils :as utils]
@@ -25,8 +26,36 @@
     (let [quality-profiles (a/<! (impl/quality-profiles))
           metadata-profiles (a/<! (impl/metadata-profiles))
           rootfolders (a/<! (impl/rootfolders))
-          albums (a/<! (impl/get-albums (:id result)))
-          album-options (map #(hash-map :id (:id %) :name (:title %)) albums)
+          _ (warn "🔍 Lidarr additional-options - checking result:"
+                  {:has-id (boolean (:id result))
+                   :id-value (:id result)
+                   :foreign-artist-id (:foreign-artist-id result)
+                   :title (:title result)})
+          albums-by-id (when (:id result)
+                         (do (warn "📀 Trying get-albums by artist ID:" (:id result))
+                             (a/<! (impl/get-albums (:id result)))))
+          albums (if (and albums-by-id (seq albums-by-id))
+                   albums-by-id
+                   (do (warn "🎵 No albums found by ID, trying multiple lookup methods...")
+                       (let [mbid-albums (a/<! (impl/get-albums-by-mbid (:foreign-artist-id result)))
+                             name-albums (a/<! (impl/get-albums-by-name (:title result)))]
+                         (warn "🔍 Lookup results:" {:mbid-count (count mbid-albums) :name-count (count name-albums)})
+                         (if (seq mbid-albums)
+                           mbid-albums
+                           name-albums))))
+          _ (warn "🎧 Lidarr additional-options albums fetched"
+                  {:artist-id (:id result)
+                   :foreign-artist-id (:foreign-artist-id result)
+                   :album-count (count albums)
+                   :first-album (when (seq albums) (select-keys (first albums) [:id :title]))})
+          ;; Usar índice como ID temporal en álbumes externos
+          album-options (->> albums
+                             (map-indexed (fn [idx album]
+                                            (if (:id album)
+                                              {:id (:id album) :name (:title album)}
+                                              {:id idx :name (str "[External] " (:title album)) :external true})))
+                             (take 25))
+          _ (warn "🎵 Album options created:" {:total-albums (count albums) :options-created (count album-options)})
           {:keys [lidarr/metadata-profile
                   lidarr/quality-profile
                   lidarr/album-folders
@@ -63,12 +92,17 @@
           quality-profiles (a/<! (impl/quality-profiles))
           metadata-profiles (a/<! (impl/metadata-profiles))
           details (a/<! (impl/get-from-musicbrainz foreign-artist-id))
-          albums (a/<! (impl/get-albums (:id details)))
+          albums (a/<! (if (:id details)
+                         (impl/get-albums (:id details))
+                         (impl/get-albums-by-mbid foreign-artist-id)))
+          _ (warn "Lidarr request-embed albums fetched"
+                  {:artist-id (:id details)
+                   :foreign-artist-id foreign-artist-id
+                   :album-count (count albums)})
           album-details (when-not (= -1 album)
-                          (first (filter #(= album (:id %)) albums)))]
-
-      (warn "ARTIST DETAILS DEBUG:" details)
-
+                          (or
+                            (some #(when (= album (:id %)) %) albums)
+                            (nth albums album nil)))]
       {:title title
        :overview (let [overview (:overview details)]
                    (when overview
@@ -85,27 +119,44 @@
 
 (defn request [payload _]
   (a/go
-    (let [details (a/<! (if-let [id (:id payload)]
-                          (impl/get-from-id id)
-                          (impl/get-from-musicbrainz (:foreign-artist-id payload))))
-          status (a/<! (impl/status details (:album payload)))]
+    (let [details (if-let [id (:id payload)]
+                    ;; Usamos el payload directo si ya tiene ID
+                    {:id id :foreign-artist-id (:foreign-artist-id payload)}
+                    ;; Sino, lo buscamos en MusicBrainz
+                    (a/<! (impl/get-from-musicbrainz (:foreign-artist-id payload))))
+          albums (a/<! (if (:id details)
+                         (impl/get-albums (:id details))
+                         (impl/get-albums-by-mbid (:foreign-artist-id payload))))
+          album-id (:album payload)
+          selected-album (cond
+                           (some #(= (:id %) album-id) albums)
+                           (first (filter #(= (:id %) album-id) albums))
+
+                           (and (number? album-id) (< album-id (count albums)))
+                           (nth albums album-id nil))
+          status (a/<! (impl/status details (:id selected-album)))]
+      
       (if status
         status
         (if-let [id (:id payload)]
-          (let [albums (a/<! (impl/get-albums id))
-                album (-> (filter #(= (:id %) (:album payload)) albums)
-                          first
-                          (assoc :monitored true))]
-            (warn "Updating album with payload:" album)
-            ;; 👇 Este PUT solo sirve si el álbum ya existe
-            (impl/PUT (str "/album/" (:id album)) {:form-params (utils/to-camel album)
-                                                   :content-type :json}))
+          ;; Artista ya existe en Lidarr: actualizar álbum específico
+          (if (or (nil? selected-album) (nil? (:id selected-album)))
+            (warn "Cannot update specific album for external album, adding artist instead")
+            (do
+              (warn "Updating existing album:" selected-album)
+              (let [updated-album (assoc selected-album :monitored true)]
+                (impl/PUT (str "/album/" (:id updated-album))
+                          {:form-params (utils/to-camel updated-album)
+                           :content-type :json}))))
+          ;; Artista nuevo: agregar a Lidarr
           (let [rfs (a/<! (impl/rootfolders))
-                payload (assoc payload :root-folder-path (utils/name-from-id rfs (:rootfolder-id payload)))
-                request-payload (a/<! (impl/request-payload payload details))]
+                payload-with-path (assoc payload :root-folder-path (utils/name-from-id rfs (:rootfolder-id payload)))
+                request-payload (a/<! (impl/request-payload payload-with-path details))]
             (warn "Final payload to Lidarr POST:" request-payload)
-            (->> (a/<! (impl/POST "/artist" {:form-params (utils/to-camel request-payload)
-                                             :content-type :json}))
+            (->> (a/<! (impl/POST "/artist"
+                                  {:form-params (utils/to-camel request-payload)
+                                   :content-type :json}))
                  (then (fn [_]
                          (when-let [id (:id payload)]
                            (impl/search-artist id)))))))))))
+
