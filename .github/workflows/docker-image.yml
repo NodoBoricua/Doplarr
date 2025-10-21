@@ -44,7 +44,7 @@ jobs:
     env:
       IMAGE_NAME: doplarr-lidarr
 
-    steps:
+  steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
