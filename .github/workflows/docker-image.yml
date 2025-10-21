@@ -1,15 +1,6 @@
 name: CI/CD Multi-Arch Docker Build for Doplarr/Lidarr-integration
 
 on:
-  push:
-    branches:
-      - feature/lidarr-integration
-      - main
-    tags:
-      - 'v*.*.*'
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
