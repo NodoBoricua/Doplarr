@@ -3,9 +3,9 @@ name: Test and Multi-Arch Build
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ feature/lidarr-ci-workflow ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ feature/lidarr-ci-workflow ]
 
 jobs:
   test-and-build:
