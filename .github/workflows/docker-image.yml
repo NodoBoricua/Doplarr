@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ feature/lidarr-ci-workflow ]
-  pull_request:
-    branches: [ feature/lidarr-ci-workflow ]
 
 jobs:
   build-test:
@@ -25,18 +23,16 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./docker/Dockerfile  # ← Ruta corregida
           platforms: linux/amd64,linux/arm64
           push: false
           tags: doplarr-lidarr:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Test images
+      - name: Verify build success
         run: |
           echo "✅ Multi-arch build completed successfully!"
           echo "📦 Testing that images can be loaded..."
-          
-          # Verificar que el build fue exitoso
           docker buildx ls
-          echo "🎉 Build process finished - both architectures compiled correctly"
 
