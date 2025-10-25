@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Setup Clojure and run tests
-        uses: DeLaGuardo/setup-clojure@v12
+        uses: DeLaGuardo/setup-clojure@v4.4
         with:
           cli: latest
           
