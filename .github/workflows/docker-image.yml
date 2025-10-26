@@ -1,4 +1,4 @@
-name: Test Docker Single-Arch Build
+name: Test Docker Multi-Arch Build
 
 on:
   workflow_dispatch:
@@ -40,10 +40,8 @@ jobs:
           file: ./docker/Dockerfile
           platforms: ${{ matrix.platform }}
           push: false
-          tags: doplarr-lidarr:test-${{
-            matrix.platform == 'linux/amd64' && 'amd64' || 
-            matrix.platform == 'linux/arm64' && 'arm64' 
-          }}  # ← TAG CORREGIDO
+          tags: |
+            ${{ matrix.platform == 'linux/amd64' && 'doplarr-lidarr:test-amd64' || 'doplarr-lidarr:test-arm64' }}
 
       - name: Verify ${{ matrix.platform }}
         run: |
