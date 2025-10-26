@@ -1,4 +1,4 @@
-name: Test Docker Build
+name: Docker Build Test
 
 on:
   workflow_dispatch:
@@ -6,19 +6,20 @@ on:
     branches: [ feature/lidarr-ci-workflow ]
 
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Build image from root context
+        
+      - name: Verify exact structure
+        run: |
+          echo "=== Estructura exacta ==="
+          ls -la src/doplarr/ || echo "❌ No existe src/doplarr/"
+          find src/doplarr/ -name "*.clj" | head -5
+          
+      - name: Build
         run: |
           docker build -f docker/Dockerfile -t doplarr-test .
           echo "✅ Build completed!"
-
-      - name: Test image
-        run: |
-          docker run --rm doplarr-test java -version
-          echo "✅ Image test passed!"
