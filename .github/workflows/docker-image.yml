@@ -1,4 +1,4 @@
-name: Docker Build Test
+name: Debug Clojure Build
 
 on:
   workflow_dispatch:
@@ -6,20 +6,32 @@ on:
     branches: [ feature/lidarr-ci-workflow ]
 
 jobs:
-  build:
+  debug:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Verify exact structure
-        run: |
-          echo "=== Estructura exacta ==="
-          ls -la src/doplarr/ || echo "❌ No existe src/doplarr/"
-          find src/doplarr/ -name "*.clj" | head -5
+      - name: Setup Clojure environment
+        uses: DeLaGuardo/setup-clojure@v4.4
+        with:
+          cli: latest
           
-      - name: Build
+      - name: Test build commands locally
         run: |
-          docker build -f docker/Dockerfile -t doplarr-test .
-          echo "✅ Build completed!"
+          echo "=== Probando build localmente ==="
+          cd /tmp
+          cp -r $GITHUB_WORKSPACE/* .
+          
+          echo "1. Probando clojure -P"
+          clojure -P || echo "❌ clojure -P falló"
+          
+          echo "2. Probando clojure -T:build"
+          clojure -T:build || echo "❌ clojure -T:build falló"
+          
+          echo "3. Probando clojure -T:build uber"
+          clojure -T:build uber || echo "❌ clojure -T:build uber falló"
+          
+          echo "4. Listando archivos"
+          find . -name "*.clj" | head -10
