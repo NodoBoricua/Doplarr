@@ -2,17 +2,14 @@ FROM clojure:tools-deps-1.11.1.1435 as builder
 
 WORKDIR /src
 
-# INSTALAR DEPENDENCIAS DEL SISTEMA PRIMERO
 RUN apt-get update && apt-get install -y curl
 
-# CACHING DEPS - con manejo de errores
 COPY deps.edn .
-COPY build/ ./build/    # ← Copia carpeta build/ completa
-RUN clojure -P || clojure -P || echo "Continuing despite potential warnings"
+COPY build/ ./build/
+RUN clojure -P || clojure -P || echo "Continuing despite potential warning"
 RUN clojure -T:build || true
 
-# COPIA los archivos fuente - NOMBRE CORREGIDO
-COPY src/doplarr/ ./src/doplarr/  # ← "doplarr" no "doplar"
+COPY src/doplarr/ ./src/doplarr/
 
 RUN clojure -T:build uber
 
