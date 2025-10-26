@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y curl
 
 # CACHING DEPS - con manejo de errores
 COPY ./deps.edn ./
-COPY ./build.clj ./  # ← CORREGIDO: copia build.clj desde la raíz
+COPY .build/build.clj ./  # ← CORREGIDO: copia build.clj desde la raíz
 RUN clojure -P || clojure -P || echo "Continuing despite potential warnings"
 RUN clojure -T:build || true
 
