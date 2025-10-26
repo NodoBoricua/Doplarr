@@ -1,4 +1,4 @@
-name: Test Docker Multi-Arch Build
+name: Test Docker Single-Arch Build
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug repository structure  # ← DEBUG AQUÍ
+      - name: Debug repository structure
         run: |
           echo "📁 Estructura del repositorio:"
           find . -name "*.edn" -o -name "build" -type d | head -20
@@ -40,8 +40,10 @@ jobs:
           file: ./docker/Dockerfile
           platforms: ${{ matrix.platform }}
           push: false
-          tags: doplarr-lidarr:test-${{ matrix.platform }}
-          no-cache: false
+          tags: doplarr-lidarr:test-${{
+            matrix.platform == 'linux/amd64' && 'amd64' || 
+            matrix.platform == 'linux/arm64' && 'arm64' 
+          }}  # ← TAG CORREGIDO
 
       - name: Verify ${{ matrix.platform }}
         run: |
