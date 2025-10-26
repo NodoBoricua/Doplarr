@@ -12,7 +12,7 @@ RUN clojure -P || clojure -P || echo "Continuing despite potential warnings"
 RUN clojure -T:build || true
 
 # EL RESTO SE MANTIENE IGUAL:
-COPY ./src/ /src/src/  # ← Solo src/, ya no copiamos build/
+COPY ./src/ /src/src/
 
 RUN clojure -T:build uber
 
