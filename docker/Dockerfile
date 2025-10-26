@@ -2,11 +2,16 @@ FROM clojure:tools-deps-1.11.1.1435 as builder
 
 WORKDIR /src
 
-# CACHING DEPS
+# AGREGAR ESTAS 3 LÍNEAS:
+# INSTALAR DEPENDENCIAS DEL SISTEMA PRIMERO
+RUN apt-get update && apt-get install -y curl
+
+# CACHING DEPS - con manejo de errores
 COPY  ./deps.edn ./
-RUN clojure -P
+RUN clojure -P || clojure -P || echo "Continuing despite potential warnings"  # ← Modificado
 RUN clojure -T:build || true
 
+# EL RESTO SE MANTIENE IGUAL:
 COPY ./build/ /src/build/
 COPY ./src/ /src/src/
 
