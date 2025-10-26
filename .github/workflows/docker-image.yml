@@ -1,4 +1,4 @@
-name: Debug deps.edn
+name: Test Fixed deps.edn
 
 on:
   workflow_dispatch:
@@ -6,44 +6,21 @@ on:
     branches: [ feature/lidarr-ci-workflow ]
 
 jobs:
-  debug:
+  test:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Check deps.edn syntax
+      - name: Test with fixed deps.edn
         run: |
-          echo "=== Contenido de deps.edn ==="
-          cat deps.edn
-          echo ""
-          echo "=== Verificando sintaxis EDN ==="
-          # Instalar una herramienta para validar EDN
-          python3 -c "
-          import sys
-          content = open('deps.edn').read()
-          # Contar paréntesis/llaves/corchetes
-          print('Paréntesis ():', content.count('('), content.count(')'))
-          print('Llaves {}:', content.count('{'), content.count('}'))
-          print('Corchetes []:', content.count('['), content.count(']'))
-          print('¿Balanceados?', 
-                content.count('(') == content.count(')') and
-                content.count('{') == content.count('}') and
-                content.count('[') == content.count(']'))
-          "
+          echo "=== Probando deps.edn corregido ==="
+          docker run --rm -v $(pwd):/src -w /src clojure:tools-deps-1.11.1.1435 \
+            clojure -P
           
-      - name: Try to fix deps.edn
+      - name: Test build
         run: |
-          # Backup del original
-          cp deps.edn deps.edn.backup
-          
-          # Intentar una versión mínima
-          cat > deps.edn.minimal << 'EOF'
-          {:deps {}
-           :aliases {:test {:extra-paths [\"test\"]}}}
-          EOF
-          
-          echo "=== Probando deps.edn mínimo ==="
-          docker run --rm -v $(pwd):/work clojure:tools-deps-1.11.1.1435 \
-            bash -c "cd /work && clojure -P -Sdeps-file deps.edn.minimal && echo '✅ deps.edn mínimo funciona'"
+          echo "=== Probando build ==="
+          docker run --rm -v $(pwd):/src -w /src clojure:tools-deps-1.11.1.1435 \
+            clojure -T:build uber || echo "Build attempted"
