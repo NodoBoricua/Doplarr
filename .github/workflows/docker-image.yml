@@ -1,4 +1,4 @@
-name: Test Fixed deps.edn
+name: Multi-Arch Docker Build
 
 on:
   workflow_dispatch:
@@ -6,21 +6,29 @@ on:
     branches: [ feature/lidarr-ci-workflow ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Test with fixed deps.edn
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build multi-arch
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: doplarr-lidarr:test
+
+      - name: Verify build
         run: |
-          echo "=== Probando deps.edn corregido ==="
-          docker run --rm -v $(pwd):/src -w /src clojure:tools-deps-1.11.1.1435 \
-            clojure -P
-          
-      - name: Test build
-        run: |
-          echo "=== Probando build ==="
-          docker run --rm -v $(pwd):/src -w /src clojure:tools-deps-1.11.1.1435 \
-            clojure -T:build uber || echo "Build attempted"
+          echo "🎉 ¡Build multi-arquitectura exitoso!"
+          echo "✅ AMD64 y ARM64 compilados correctamente"
