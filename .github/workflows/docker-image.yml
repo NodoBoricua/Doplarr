@@ -8,10 +8,24 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Debug repository structure  # ← DEBUG AQUÍ
+        run: |
+          echo "📁 Estructura del repositorio:"
+          find . -name "*.edn" -o -name "build" -type d | head -20
+          echo "📦 Contenido de docker/:"
+          ls -la docker/
+          echo "🔍 Contenido de build/ (si existe):"
+          ls -la build/ || echo "No existe directorio build"
+          echo "🔍 Contenido de src/ (si existe):"
+          ls -la src/ || echo "No existe directorio src"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -19,20 +33,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build multi-arch image
+      - name: Build for ${{ matrix.platform }}
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/Dockerfile  # ← Ruta corregida
-          platforms: linux/amd64,linux/arm64
+          file: ./docker/Dockerfile
+          platforms: ${{ matrix.platform }}
           push: false
-          tags: doplarr-lidarr:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: doplarr-lidarr:test-${{ matrix.platform }}
+          no-cache: false
 
-      - name: Verify build success
+      - name: Verify ${{ matrix.platform }}
         run: |
-          echo "✅ Multi-arch build completed successfully!"
-          echo "📦 Testing that images can be loaded..."
-          docker buildx ls
-
+          echo "✅ Build completed for ${{ matrix.platform }}"
