@@ -13,25 +13,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Setup Clojure environment
-        uses: DeLaGuardo/setup-clojure@v4.4
-        with:
-          cli: latest
-          
-      - name: Test build commands locally
+      - name: Test structure and basic commands
         run: |
-          echo "=== Probando build localmente ==="
-          cd /tmp
-          cp -r $GITHUB_WORKSPACE/* .
+          echo "=== Estructura del proyecto ==="
+          find . -name "*.edn" -o -name "*.clj" | head -20
+          echo ""
           
-          echo "1. Probando clojure -P"
-          clojure -P || echo "❌ clojure -P falló"
+          echo "=== Contenido de deps.edn ==="
+          cat deps.edn || echo "No se puede leer deps.edn"
+          echo ""
           
-          echo "2. Probando clojure -T:build"
-          clojure -T:build || echo "❌ clojure -T:build falló"
+          echo "=== Verificando build.clj ==="
+          cat build/build.clj || echo "No se puede leer build/build.clj"
+          echo ""
           
-          echo "3. Probando clojure -T:build uber"
-          clojure -T:build uber || echo "❌ clojure -T:build uber falló"
+          echo "=== Archivos en src/doplarr/ ==="
+          find src/doplarr/ -name "*.clj" | head -10
+          echo ""
           
-          echo "4. Listando archivos"
-          find . -name "*.clj" | head -10
+          echo "=== Probando con Docker simplificado ==="
+
+      - name: Build with simple Dockerfile
+        run: |
+          # Crear Dockerfile temporal mínimo
+          cat > Dockerfile.simple << 'EOF'
+          FROM clojure:tools-deps-1.11.1.1435
+          WORKDIR /test
+          COPY . .
+          RUN echo "=== Listando archivos ===" && \
+              find . -name "*.clj" -o -name "*.edn" | head -15 && \
+              echo "=== Probando clojure -P ===" && \
+              clojure -P && \
+              echo "✅ clojure -P funcionó" || \
+              echo "❌ clojure -P falló"
+          EOF
+          
+          docker build -f Dockerfile.simple -t test-build .
